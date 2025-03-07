@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premios Nobel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: #007BFF;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Consulta de Premios Nobel</h1>
+    <p>Haz clic en el botón para obtener ganadores aleatorios del Premio Nobel.</p>
+    <button onclick="fetchNobelWinners()">Mostrar ganadores</button>
+    <div id="result"></div>
+
+    <script>
+        function fetchNobelWinners() {
+            fetch('/api/nobel')
+                .then(response => response.json())
+                .then(data => {
+                    let resultDiv = document.getElementById("result");
+                    resultDiv.innerHTML = "<h2>Ganadores:</h2>";
+                    data.forEach(winner => {
+                        resultDiv.innerHTML += `<p><strong>${winner.name}</strong> - ${winner.country}</p>`;
+                    });
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    document.getElementById("result").innerHTML = "<p>No se pudieron obtener los datos.</p>";
+                });
+        }
+    </script>    
+    <canvas id="nobelChart" width="400" height="200"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function fetchNobelStats() {
+            fetch('/api/countries')
+                .then(response => response.json())
+                .then(data => {
+                    let countries = data.map(entry => entry._id);
+                    let counts = data.map(entry => entry.count);
+    
+                    let ctx = document.getElementById('nobelChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: countries,
+                            datasets: [{
+                                label: 'Cantidad de premios Nobel',
+                                data: counts,
+                                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error("Error cargando la gráfica:", error));
+        }
+    
+        fetchNobelStats();
+    </script>
+    <canvas id="categoriesChart" width="400" height="200"></canvas>
+    <script>
+        function fetchCategoriesByCountry() {
+            fetch('/api/categories_by_country')
+                .then(response => response.json())
+                .then(data => {
+                    let countries = Object.keys(data);
+                    let categories = new Set();
+                    let datasets = [];
+    
+                    countries.forEach(country => {
+                        Object.keys(data[country]).forEach(category => {
+                            categories.add(category);
+                        });
+                    });
+    
+                    categories = Array.from(categories);
+    
+                    categories.forEach(category => {
+                        datasets.push({
+                            label: category,
+                            data: countries.map(country => data[country][category] || 0),
+                            backgroundColor: `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.5)`,
+                            borderColor: 'rgba(0,0,0,0.8)',
+                            borderWidth: 1
+                        });
+                    });
+    
+                    let ctx = document.getElementById('categoriesChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: countries,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error("Error cargando la gráfica de categorías:", error));
+        }
+    
+        fetchCategoriesByCountry();
+    </script>
+    
+</body>
+</html>
